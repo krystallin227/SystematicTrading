@@ -22,7 +22,7 @@ class SpreadCurve:
         bond_data['t_spread']  = bond_data['t_spread'] * 10000 #convert t_spread to bps
         bond_data.query(f'{self.x_var} > 0.5', inplace=True)
         bond_data.eval('frac_outstanding = amount_outstanding / offering_amt', inplace=True)
-        bond_data['nearst_pillar'] = bond_data[self.x_var].round()
+        bond_data['nearst_pillar'] = (bond_data[self.x_var] * 2).round() / 2
         bond_data.eval('dirty_price = price_ldm + coupacc', inplace = True)        
         bond_data.dropna(subset= dropna_cols, inplace = True)
         bond_data.reset_index(drop=True, inplace=True)
@@ -92,7 +92,6 @@ class SpreadCurve:
     def plot_fitted_vs_actual(self, query_date):
         assert self.fitted_models is not None, 'Must call fit before plotting'
         
-        # Create a 2x2 grid of subplots
         fig, axs = plt.subplots(3, 2, figsize=(9, 7.5))
         fig.suptitle(f'Fitted vs Actual T Spread for {query_date.strftime("%Y-%m-%d")}', fontsize=20)
         

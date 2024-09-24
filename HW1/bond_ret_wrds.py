@@ -22,7 +22,7 @@ def bond_data(ticker):
     if most_freq_rating not in ["A", "AA", "AAA"]:
         return
     
-    #filter data for the same bond type and security level. Work with AAA rated bond with no conversion 
+    #filter data for the same bond type and security level
     df_bond_data = df_bond_data.query('bond_type == "CDEB" and security_level == "SEN" and rating_cat == @most_freq_rating and conv == 0')
         
     if not os.path.exists('HW1/data'):
