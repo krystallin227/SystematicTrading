@@ -42,7 +42,7 @@ class SpreadCurve:
                 subset = self.bond_data.query('company_symbol == @ticker')
             
             # Define the size of the bubbles based on 't_spread'
-            sizes = subset['t_dvolume'] / 1e7   # Adjust the multiplier as necessary for better scaling
+            sizes = subset['amount_outstanding'] / 1e5   # Adjust the multiplier as necessary for better scaling
             
             # Scatter plot with bubble size based on 't_spread'
             scatter = ax.scatter(subset['duration'], subset['t_spread'], s=sizes, label=ticker, color=colors[i % len(colors)], alpha=0.6, edgecolor='black')
@@ -50,6 +50,8 @@ class SpreadCurve:
             ax.set_title(f'{ticker}')
             ax.set_xlabel('Duration')
             ax.set_ylabel('t_spread (bp)')
+        
+        axs[-1][-1].axis('off')
         
         plt.tight_layout()
         plt.show()
@@ -138,6 +140,8 @@ class SpreadCurve:
             ax.set_title(f'{company}')
             ax.set_xlabel(self.x_var)
             ax.set_ylabel('T Spread (bp)')
+        
+        axs[-1][-1].axis('off')
 
         plt.tight_layout()
         plt.show()

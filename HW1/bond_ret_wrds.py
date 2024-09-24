@@ -34,5 +34,5 @@ def bond_data(ticker):
 
 if __name__ == '__main__':
 
-    for ticker in ['AAPL', 'AMZN', 'IBM', 'MSFT', 'WMT', 'GS']:
+    for ticker in ['AAPL', 'AMZN', 'IBM', 'MSFT', 'WMT']:
         bond_data(ticker)
