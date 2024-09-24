@@ -2,35 +2,34 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
-import seaborn as sns
+
 class SpreadCurve:
     
-    def __init__(self, tickers, features, target_var) -> None:
+    def __init__(self, tickers, features, target_var, x_var) -> None:
         self.tickers = tickers
         self.features = features
+        self.x_var = x_var
         self.target_var = target_var
-        self.bond_data = self.get_bond_data(tickers, features + [target_var, 'frac_outstanding'])
+        self.bond_data = self.get_bond_data(tickers, features + [target_var, 'frac_outstanding', 'dirty_price', 'duration'])
         self.fitted_models = None
     
-    @staticmethod
-    def get_bond_data(tickers, dropna_cols):
+
+    def get_bond_data(self, tickers, dropna_cols):
         bond_data = pd.concat([pd.read_csv(f'data/{ticker}.csv', parse_dates= ['date', 'first_interest_date']) for ticker in tickers])
         bond_data['age'] =  ((bond_data['date'] - bond_data['first_interest_date']).dt.days / 365).clip(lower = 0)
-        bond_data['log_tmt'] = np.log(1 + bond_data['tmt'])
-        bond_data.sort_values(by = ['date', 'company_symbol', 'tmt'], inplace = True)
+        bond_data[f'log_{self.x_var}'] = np.log(1 + bond_data[self.x_var])
+        bond_data.sort_values(by = ['date', 'company_symbol', self.x_var], inplace = True)
         bond_data['t_spread']  = bond_data['t_spread'] * 10000 #convert t_spread to bps
-        bond_data.query('tmt > 0.5', inplace=True)
+        bond_data.query(f'{self.x_var} > 0.5', inplace=True)
         bond_data.eval('frac_outstanding = amount_outstanding / offering_amt', inplace=True)
+        bond_data['nearst_pillar'] = bond_data[self.x_var].round()
+        bond_data.eval('dirty_price = price_ldm + coupacc', inplace = True)        
         bond_data.dropna(subset= dropna_cols, inplace = True)
-        #bond_data['nearst_pillar'] = (bond_data['tmt'] * 2).round() / 2
-        bond_data['nearst_pillar'] = bond_data['tmt'].round()
-        bond_data['nearst_coupon'] = (bond_data['coupon'] * 2).round() / 2
-        
         bond_data.reset_index(drop=True, inplace=True)
         return bond_data
     
     def t_spread_plots(self, query_date=None):
-        fig, axs = plt.subplots(2, 2, figsize=(9, 7.5))
+        fig, axs = plt.subplots(3, 2, figsize=(9, 7.5))
         fig.suptitle(f'T Spread vs Duration {query_date.strftime("%Y-%m-%d") if query_date else ""}', fontsize=20)
         colors = ['blue', 'green', 'red', 'purple']
         
@@ -92,7 +91,7 @@ class SpreadCurve:
         assert self.fitted_models is not None, 'Must call fit before plotting'
         
         # Create a 2x2 grid of subplots
-        fig, axs = plt.subplots(2, 2, figsize=(9, 7.5))
+        fig, axs = plt.subplots(3, 2, figsize=(9, 7.5))
         fig.suptitle(f'Fitted vs Actual T Spread for {query_date.strftime("%Y-%m-%d")}', fontsize=20)
         
         # Get the list of unique company symbols
@@ -116,14 +115,14 @@ class SpreadCurve:
             actual_t_spread = subset['t_spread']
             
             # Plot actual values (scatter without label)
-            ax.plot(subset['tmt'], actual_t_spread, 'o', alpha=0.7)
+            ax.plot(subset[self.x_var], actual_t_spread, 'o', alpha=0.7)
 
             # Plot fitted values as a line (without label)
-            ax.plot(subset_train['tmt'], fitted_t_spread, '^-')
+            ax.plot(subset_train[self.x_var], fitted_t_spread, '^-')
 
             # Add text labels for coupon values at each fitted point, alternating positions
             for j in range(len(subset_train)):
-                tmt_val = subset_train['tmt'].iloc[j]
+                tmt_val = subset_train[self.x_var].iloc[j]
                 fitted_val = fitted_t_spread.iloc[j]
                 coupon_val = subset_train['coupon'].iloc[j]
                 
@@ -137,7 +136,7 @@ class SpreadCurve:
 
             # Customize plot appearance
             ax.set_title(f'{company}')
-            ax.set_xlabel('TMT (Treasury Maturity)')
+            ax.set_xlabel(self.x_var)
             ax.set_ylabel('T Spread (bp)')
 
         plt.tight_layout()
