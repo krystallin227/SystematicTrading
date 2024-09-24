@@ -1,6 +1,5 @@
 import wrds
 import os
-import pandas as pd
 
 db = wrds.Connection()
 
